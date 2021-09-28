@@ -289,6 +289,27 @@ var dtpPanel = Utils.defineClass({
 
         this._timeoutsHandler.add([T2, Me.settings.get_int('intellihide-enable-start-delay'), () => this.intellihide = new Intellihide.Intellihide(this)]);
 
+        if (!Me.settings.get_boolean('intellihide') || Me.settings.get_int('intellihide-enable-start-delay') > 1) {
+            // force panel reveal after 750ms (workaround for #1252)
+            const position = this.geom.position;
+            const size = this.panelBox[this.checkIfVertical() ? 'height' : 'width'];
+            const coef = position == St.Side.TOP || position == St.Side.LEFT ? -1 : 1;
+
+            const tProp = 'translation_' + (this.checkIfVertical() ? 'x' : 'y');
+            this.panelBox[tProp] = size * coef;
+
+            Utils.animate(this.panelBox, {
+                [tProp]: 0,
+                time: 0.01,
+                delay: 0.75,
+                transition: 'easeOutQuad',
+                onComplete: () => {
+                    this.panelBox.visible = true;
+                    Main.layoutManager._queueUpdateRegions();
+                }
+            });
+        }
+
         this._signalsHandler.add(
             // this is to catch changes to the theme or window scale factor
             [
